@@ -2,6 +2,10 @@
 var app = {};
 
 app.initialize = function(){
+  document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
+},
+
+app.onDeviceReady = function(){
   // Construire la carte Leaflet.
   this.createMap();
   this.geolocalisation();
