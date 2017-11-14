@@ -1,46 +1,81 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-var app = {
-    // Application Constructor
-    initialize: function() {
-        document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
-    },
 
-    // deviceready Event Handler
-    //
-    // Bind any cordova events here. Common events are:
-    // 'pause', 'resume', etc.
-    onDeviceReady: function() {
-        this.receivedEvent('deviceready');
-    },
+var app = {};
 
-    // Update DOM on a Received Event
-    receivedEvent: function(id) {
-        var parentElement = document.getElementById(id);
-        var listeningElement = parentElement.querySelector('.listening');
-        var receivedElement = parentElement.querySelector('.received');
+app.initialize = function(){
+  document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
+},
 
-        listeningElement.setAttribute('style', 'display:none;');
-        receivedElement.setAttribute('style', 'display:block;');
+app.onDeviceReady = function(){
+  // Construire la carte Leaflet.
+  this.createMap();
+  this.geolocalisation();
 
-        console.log('Received Event: ' + id);
-    }
+  $('#map').on( "pageshow", function(e){
+    console.log('Carte affichée...');
+    // Ajuster la taille de la carte (nécessaire à cause de jQuery mobile)
+    setTimeout(function(){ app.map.invalidateSize(); }, 300); 
+  });
+};
+
+app.createMap = function(){
+  var self = this;
+
+  // Ajuster la hauteur du div qui contiendra la carte.
+  var h = $('#map div[data-role=header]').height() + $('#map div[data-role=footer]').height();
+  $('#mapdiv-wrapper').css('height', 'calc(100vh - '+h+'px)');
+
+  self.map = L.map('mapdiv', {
+    maxBounds: [[45, 5], [48, 9]],
+    minZoom: 10,
+    maxZoom: 17
+  }).setView([46.524, 6.633], 12);
+
+  L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+  }).addTo(self.map);
+
+  // Fix the map display (jQuery mobile issue)
+  setTimeout(function(){ self.map.invalidateSize(); }, 300);
+  setTimeout(function(){ self.map.invalidateSize(); }, 2000);
+};
+
+app.geolocalisation = function(){
+  var self = this;
+  self.map.locate({setView: false});
+  self.map.on('locationfound', self.onLocationFound);
+  self.map.on('locationerror', self.onLocationError);
+};
+
+app.onLocationError = function(e){
+  console.log('Erreur. La géolocalisation ne fonctionne pas.');
+};
+
+app.onLocationFound = function(e){
+  console.log('Localisation trouvée: ', e);
+  // Ajouter un marqueur à la position de l'utilisateur.
+  self.currentLocation = e;
+  if (self.currentLocationMarker) {
+    // Mettre à jour le marqueur existant
+    self.currentLocationMarker.setLatLng(e.latlng);
+    self.currentLocationAccuracy.setLatLng(e.latlng);
+    self.currentLocationAccuracy.setRadius(e.accuracy / 2);
+  } else {
+    // Créer le marqueur
+    var currentLocationIcon = L.icon({
+      iconUrl: 'img/current-location.png',
+      iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -35]
+    });
+    self.currentLocationMarker = L.marker(e.latlng, { icon: currentLocationIcon });
+    self.currentLocationMarker.addTo(app.map);
+    var radius = e.accuracy / 2;
+    self.currentLocationAccuracy = L.circle(e.latlng, radius);
+    self.currentLocationAccuracy.addTo(app.map);
+  }
+
+  // Demander la position de l'utilisateur encore une fois dans un petit moment.
+  setTimeout(function(){
+    app.map.locate({setView: false});
+  }, 5000);
 };
 
 app.initialize();

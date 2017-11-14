@@ -9,6 +9,9 @@
   "installed_plugins": {
     "cordova-plugin-whitelist": {
       "PACKAGE_NAME": "ch.unil.geovis"
+    },
+    "cordova-plugin-geolocation": {
+      "PACKAGE_NAME": "ch.unil.geovis"
     }
   },
   "dependent_plugins": {}
